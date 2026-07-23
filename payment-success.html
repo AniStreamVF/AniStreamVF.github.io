@@ -50,11 +50,23 @@ session.plan = plan;
 session.subscriptionEnd = new Date(Date.now() + 30*24*60*60*1000).toISOString();
 localStorage.setItem('anistream_session', JSON.stringify(session));
 // Update backend profile
-fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + session.id, {
+(async () => {
+try {
+const r = await fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + session.id, {
 method: 'PATCH',
 headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
 body: JSON.stringify({ is_premium: true, subscription_plan: plan, subscription_status: 'active', subscription_end: session.subscriptionEnd })
-}).then(r => { if (!r.ok) r.text().then(t => console.error('PATCH failed:', t)); else console.log('Subscription updated in DB'); }).catch(e => console.error('PATCH error:', e));
+});
+if (!r.ok) {
+const err = await r.text();
+document.querySelector('.pricing-cta').insertAdjacentHTML('beforeend', '<p style="color:#ff5252;font-size:13px;margin-top:12px">Erreur BDD: ' + err + '</p>');
+} else {
+document.querySelector('.pricing-cta').insertAdjacentHTML('beforeend', '<p style="color:#69f0ae;font-size:13px;margin-top:12px">✅ Abonnement synchronisé avec le serveur</p>');
+}
+} catch(e) {
+document.querySelector('.pricing-cta').insertAdjacentHTML('beforeend', '<p style="color:#ff5252;font-size:13px;margin-top:12px">Erreur réseau: ' + e.message + '</p>');
+}
+})();
 }
 </script>
 
