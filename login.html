@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion - AniStream</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.auth-form { max-width: 400px; margin: 0 auto; padding: 40px 0; }
+.auth-form input { width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #fff; font-size: 15px; font-family: 'Inter', sans-serif; outline: none; transition: 0.2s; }
+.auth-form input:focus { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+.auth-form input::placeholder { color: rgba(255,255,255,0.25); }
+.auth-form label { display: block; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 6px; font-weight: 500; }
+.auth-form .field { margin-bottom: 20px; }
+.auth-btn { width: 100%; padding: 14px; background: #fff; color: #000; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: 0.3s; letter-spacing: 0.5px; }
+.auth-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(255,255,255,0.1); }
+.auth-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.auth-error { color: #ff5252; font-size: 13px; text-align: center; margin-top: 12px; display: none; }
+.auth-success { color: #69f0ae; font-size: 13px; text-align: center; margin-top: 12px; display: none; }
+.auth-toggle { text-align: center; margin-top: 16px; font-size: 14px; color: rgba(255,255,255,0.4); }
+.auth-toggle a { color: #fff; cursor: pointer; text-decoration: underline; }
+#account-area { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+<nav>
+<a href="/" class="logo">AniStream</a>
+<div class="nav-links" id="nav-links">
+<a href="index.html#features">Fonctionnalités</a>
+<a href="pricing.html">Tarifs</a>
+<a href="faq.html">FAQ</a>
+<a href="login.html" id="nav-account" class="nav-cta">Compte</a>
+</div>
+</nav>
+</header>
+
+<section class="page-header" id="login-header">
+<h1 id="auth-title">Connexion</h1>
+<p id="auth-sub">Accédez à votre compte AniStream.</p>
+</section>
+
+<section class="auth-form" id="login-form">
+<div class="field">
+<label>Email</label>
+<input type="email" id="email" placeholder="votre@email.com" autocomplete="email">
+</div>
+<div class="field">
+<label>Mot de passe</label>
+<input type="password" id="password" placeholder="Mot de passe" autocomplete="current-password">
+</div>
+<div class="field" id="name-field" style="display:none">
+<label>Nom d'utilisateur</label>
+<input type="text" id="username" placeholder="Pseudo">
+</div>
+<button class="auth-btn" id="auth-btn">Se connecter</button>
+<div class="auth-error" id="auth-error"></div>
+<div class="auth-success" id="auth-success"></div>
+<div class="auth-toggle">
+<span id="auth-toggle-text">Pas encore de compte ?</span> <a id="auth-toggle-link">Créer un compte</a>
+</div>
+</section>
+
+<section id="account-area">
+<div class="page-header" style="border:none;padding-bottom:0">
+<h1>Mon compte</h1>
+</div>
+<div style="max-width:500px;margin:0 auto;padding:0 24px">
+<div class="download-card" style="margin-bottom:24px">
+<p style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:4px">Connecté en tant que</p>
+<p id="account-email" style="font-size:16px;font-weight:600;margin-bottom:16px"></p>
+<span class="version-badge" id="account-plan" style="display:inline-block;margin-bottom:8px">Free</span>
+<p id="account-status" style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:8px"></p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<a href="pricing.html" class="btn-primary" style="text-align:center">Gérer mon abonnement</a>
+<button class="btn-outline" id="logout-btn" style="cursor:pointer;text-align:center">Déconnexion</button>
+</div>
+</div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://fxqrmcinehnuwmkvogcl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4cXJtY2luZWhudXdta3ZvZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0OTEzMzAsImV4cCI6MjEwMDA2NzMzMH0.JEnZl17WIpPL42fcMRnOx25HRu7zbaUkPilN9PSFhUM';
+
+let isRegister = false;
+let session = JSON.parse(localStorage.getItem('anistream_session') || 'null');
+const emailInput = document.getElementById('email');
+const passInput = document.getElementById('password');
+const nameInput = document.getElementById('username');
+const nameField = document.getElementById('name-field');
+const authBtn = document.getElementById('auth-btn');
+const authError = document.getElementById('auth-error');
+const authSuccess = document.getElementById('auth-success');
+const authTitle = document.getElementById('auth-title');
+const authSub = document.getElementById('auth-sub');
+const toggleText = document.getElementById('auth-toggle-text');
+const toggleLink = document.getElementById('auth-toggle-link');
+const loginForm = document.getElementById('login-form');
+const loginHeader = document.getElementById('login-header');
+const accountArea = document.getElementById('account-area');
+
+async function api(path, options = {}) {
+const headers = { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' };
+const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, { ...options, headers: { ...headers, ...options.headers } });
+if (!res.ok) { const text = await res.text(); throw new Error(text); }
+return res.json();
+}
+
+function showLogin() { loginForm.style.display = 'block'; loginHeader.style.display = 'block'; accountArea.style.display = 'none'; }
+function showAccount() { loginForm.style.display = 'none'; loginHeader.style.display = 'none'; accountArea.style.display = 'block'; }
+
+if (session) {
+showAccount();
+document.getElementById('account-email').textContent = session.email || session.id;
+document.getElementById('account-plan').textContent = session.plan || 'Free';
+document.getElementById('account-status').textContent = session.plan === 'starter' || session.plan === 'premium' ? 'Abonnement actif' : 'Aucun abonnement actif';
+}
+
+toggleLink.addEventListener('click', () => {
+isRegister = !isRegister;
+nameField.style.display = isRegister ? 'block' : 'none';
+authBtn.textContent = isRegister ? "S'inscrire" : 'Se connecter';
+authTitle.textContent = isRegister ? 'Inscription' : 'Connexion';
+authSub.textContent = isRegister ? 'Créez votre compte AniStream.' : 'Connectez-vous à votre compte.';
+toggleText.textContent = isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?';
+toggleLink.textContent = isRegister ? 'Se connecter' : 'Créer un compte';
+authError.style.display = 'none';
+});
+
+authBtn.addEventListener('click', async () => {
+const email = emailInput.value.trim();
+const password = passInput.value.trim();
+const username = nameInput.value.trim();
+if (!email || !password || (isRegister && !username)) { authError.textContent = 'Tous les champs sont requis'; authError.style.display = 'block'; return; }
+authError.style.display = 'none';
+authBtn.disabled = true;
+authBtn.textContent = 'Chargement...';
+try {
+if (isRegister) {
+const existing = await api('profiles?email=eq.' + encodeURIComponent(email));
+if (existing.length > 0) { throw new Error('Cet email est déjà utilisé'); }
+const salt = bcryptjs.genSaltSync(12);
+const hash = bcryptjs.hashSync(password, salt);
+const id = crypto.randomUUID();
+await api('profiles', { method: 'POST', body: JSON.stringify({ id, name: username, email, password_hash: hash, language: 'vf' }) });
+session = { id, email, name: username, language: 'vf', plan: 'free' };
+localStorage.setItem('anistream_session', JSON.stringify(session));
+authSuccess.textContent = 'Compte créé !'; authSuccess.style.display = 'block';
+setTimeout(() => window.location.href = 'pricing.html', 800);
+} else {
+const profiles = await api('profiles?email=eq.' + encodeURIComponent(email));
+if (profiles.length === 0) { throw new Error('Email ou mot de passe incorrect'); }
+const p = profiles[0];
+if (!p.password_hash) { throw new Error('Email ou mot de passe incorrect'); }
+const match = bcryptjs.compareSync(password, p.password_hash);
+if (!match) { throw new Error('Email ou mot de passe incorrect'); }
+session = { id: p.id, email: p.email, name: p.name, language: p.language || 'vf', plan: p.subscription_plan || 'free' };
+localStorage.setItem('anistream_session', JSON.stringify(session));
+showAccount();
+document.getElementById('account-email').textContent = session.email;
+document.getElementById('account-plan').textContent = session.plan === 'starter' || session.plan === 'premium' ? session.plan.charAt(0).toUpperCase() + session.plan.slice(1) : 'Free';
+document.getElementById('account-status').textContent = session.plan === 'starter' || session.plan === 'premium' ? 'Abonnement actif' : 'Aucun abonnement actif';
+authSuccess.textContent = 'Connecté !'; authSuccess.style.display = 'block';
+setTimeout(() => authSuccess.style.display = 'none', 2000);
+}
+} catch (e) { authError.textContent = e.message; authError.style.display = 'block'; }
+authBtn.disabled = false;
+authBtn.textContent = isRegister ? "S'inscrire" : 'Se connecter';
+});
+
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+localStorage.removeItem('anistream_session');
+session = null;
+showLogin();
+});
+</script>
+
+<footer>
+<div class="footer-content">
+<div class="footer-col">
+<h4>AniStream</h4>
+<p>Application de streaming anime gratuite et open-source.</p>
+</div>
+<div class="footer-col">
+<h4>Liens</h4>
+<a href="index.html#features">Fonctionnalités</a>
+<a href="pricing.html">Tarifs</a>
+<a href="faq.html">FAQ</a>
+<a href="privacy.html">Confidentialité</a>
+</div>
+<div class="footer-col">
+<h4>Légal</h4>
+<p class="legal-text">Cette application utilise ExoPlayer pour lire des vidéos hébergées par des tiers. Le contenu diffusé est fourni par les utilisateurs et provient de sources externes indépendantes. AniStream ne stocke aucun fichier vidéo sur ses serveurs.</p>
+</div>
+</div>
+<div class="footer-bottom">
+<p>&copy; 2026 AniStream. Tous droits réservés.</p>
+</div>
+</footer>
+
+</body>
+</html>

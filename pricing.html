@@ -28,7 +28,8 @@
 <a href="index.html#gallery">Aperçu</a>
 <a href="faq.html">FAQ</a>
 <a href="privacy.html">Confidentialité</a>
-<a href="index.html#download" class="nav-cta">Télécharger</a>
+<a href="index.html#download">Télécharger</a>
+<a href="login.html" class="nav-cta">Compte</a>
 </div>
 </nav>
 </header>
@@ -66,7 +67,7 @@
 <li><span class="check">&#10003;</span> Streaming HD</li>
 <li><span class="check">&#10003;</span> Watch Party</li>
 </ul>
-<a href="#subscribe" class="btn-primary">S'abonner</a>
+<a href="#subscribe" class="btn-primary" onclick="return handleSubscribe('starter')">S'abonner</a>
 </div>
 
 <div class="pricing-card">
@@ -81,7 +82,7 @@
 <li><span class="check">&#10003;</span> Accès anticipé aux nouveautés</li>
 <li><span class="check">&#10003;</span> Support prioritaire</li>
 </ul>
-<a href="#subscribe" class="btn-outline">S'abonner</a>
+<a href="#subscribe" class="btn-outline" onclick="return handleSubscribe('premium')">S'abonner</a>
 </div>
 
 </div>
@@ -122,6 +123,7 @@
 <a href="index.html#gallery">Aperçu</a>
 <a href="index.html#download">Télécharger</a>
 <a href="faq.html">FAQ</a>
+<a href="login.html">Compte</a>
 <a href="privacy.html">Politique de confidentialité</a>
 </div>
 <div class="footer-col">
@@ -134,5 +136,13 @@
 </div>
 </footer>
 
+<script>
+function handleSubscribe(plan) {
+const session = JSON.parse(localStorage.getItem('anistream_session') || 'null');
+if (!session) { window.location.href = 'login.html'; return false; }
+alert('Redirection vers le paiement ' + (plan === 'starter' ? 'Starter (4,99€)' : 'Premium (9,99€)') + '...\n\nVous allez être redirigé vers Stripe.');
+return true;
+}
+</script>
 </body>
 </html>
