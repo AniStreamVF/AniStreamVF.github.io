@@ -147,17 +147,10 @@ authBtn.disabled = true;
 authBtn.textContent = 'Chargement...';
 try {
 if (isRegister) {
-const existing = await api('profiles?email=eq.' + encodeURIComponent(email));
-if (existing.length > 0) { throw new Error('Cet email est déjà utilisé'); }
-const encoder = new TextEncoder();
-const data = encoder.encode(password);
-const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-const hashArray = Array.from(new Uint8Array(hashBuffer));
-const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-const id = crypto.randomUUID();
-const fakeBcrypt = '$2a$12$' + btoa(hashHex).substring(0, 53);
-await api('profiles', { method: 'POST', body: JSON.stringify({ id, name: username, email, password_hash: fakeBcrypt, language: 'vf' }) });
-session = { id, email, name: username, language: 'vf', plan: 'free' };
+const res = await fetch(AUTH_URL, { method: 'POST', headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, register: true, name: username }) });
+if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Erreur'); }
+const p = await res.json();
+session = p;
 localStorage.setItem('anistream_session', JSON.stringify(session));
 authSuccess.textContent = 'Compte créé !'; authSuccess.style.display = 'block';
 setTimeout(() => window.location.href = 'pricing.html', 800);
